@@ -1,33 +1,5 @@
 # WMATA Trip Analysis
-
-
 Analysis of WMATA performance using Conway's own SmarTrip data
-
-.
-
-# Data Collection and Munging:
-
-## Excel steps
-
-1. Log into SmarTrip 
-2. Navigate to usage history for the SmarTrip card
-3. For each calendar month, export to Excel
-4. Copy and paste rows of data to a master Excel sheet
-4. Station name corrections ("Rosslyn East" to "Rosslyn", "Capitol S" to "Capitol South", etc.)
-5. Change format of all cells in the "Change" and "Balance" columns to numbers rather than currency
-4. If SmartBenefits is used, separate SmartBenefits balance and changes from SmarTrip balance and changes
-5. Create new columns for "Month" and "Weekday"
-4. Convert time into Month and Weekday using Excel format changes
-4. Export whole file as CSV
-
-## Python Steps
-
-1. Convert time strings to timestamps using pandas.to_datetime()
-2. Sort by time ascending (oldest trips to newest)
-3. Group by trips: 
-  1. Iterate through rows; if "Description" is "Entry", then add one to the trip number and append to a list
-  2. Add list to DataFrame as new column "Trip"
-
 
 # Data Analysis
 
@@ -73,8 +45,3 @@ Filtered the trips by [Operator = Metrorail]:
   - Average duration: 24 minutes, 59 seconds
   - Shortest trip: 7 minutes (Pentagon to National Airport)
   - Longest trip: 1 hour, 15 minutes (New York Avenue to Pentagon)
-
-
-
-
-
