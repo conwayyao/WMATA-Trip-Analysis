@@ -27,11 +27,14 @@ for row in data.Description:
     trips.append(i)
 data['Trip'] = trips
 
-## Examine trips
+## Examine trips and data
 len(data.Trip.value_counts())
-
-## Drop erroneous trip duration rows
-data.drop(data[data.Trip.isin([184, 188, 269])].index, inplace=True) 
+data.columns
+data.Description.value_counts()
+len(data)
+data[data.Change < 0].Change.sum()
+data[data.Change > 0].Change.sum()
+data.Trip.describe()
 
 # Calculate subway-to-subway trips
 subway_trips=[]
@@ -57,6 +60,13 @@ for i in range(1, len(set(data['Trip']))+1):
 columns = ['trip', 'month', 'weekday', 'entr_trfr', 'origin', 'destination', 'entry_time', 'exit_time', 'duration', 'cost']
 subway_df = pd.DataFrame(subway_trips, columns=columns)
 subway_df.set_index('trip', inplace=True)
+
+## Cull erroneous subway trips
+subway_df.columns
+subway_df.duration.describe() # Duration description
+subway_df.sort_values(by='duration')[['origin', 'destination', 'duration']].tail(5) # Longest trips
+data[data.Trip == 269][['Datetime', 'Operator', 'Description', 'Entry_Route', 'Exit']] # Confirm erroneous trips
+subway_df.drop([133, 184, 188, 269], inplace=True) # Drop erroneous trips
 
 ## Period of day
 pd_list = []
@@ -84,26 +94,33 @@ for i, row in subway_df.iterrows():
         subway_df.set_value(i, 'peak', True)
 
 ## Examine subway trips
-subway_df.columns
 sum(subway_df.cost) # Total cost
 subway_df.cost.describe() # Cost description
 len(subway_df) # Number of trips
 subway_df.entr_trfr.value_counts() # Entries/Transfers
+len(subway_df.origin.value_counts())
 len(subway_df.destination.value_counts()) # Number of stations visited
+subway_df.month.value_counts()
+subway_df.weekday.value_counts()
 subway_df.period.value_counts() # Time of day
 subway_df.duration.sum() # Total time
-subway_df.duration.describe() # Duration description
-subway_df.sort_values(by='duration').tail(5) # Longest trips
-subway_df.sort_values(by=['origin', 'destination'])[['origin', 'destination', 'duration']]
+subway_df.duration.describe()
 
 ## Examine peak fare trips
 subway_df.peak.value_counts() # Number of peak fare trips
 subway_df.groupby(by='peak').duration.describe() # Peak fare duration
+subway_df.groupby(by='peak').cost.describe() # Peak fare cost
 
 # Circulator
 circulator = data[(data.Operator=="DC Circulator") & ((data.Description == "Transfer") | (data.Description == "Entry"))]
+
+## Examine Circulator trips
 len(circulator) # Total Circulator boardings
 circulator.columns
+circulator.Entry_Route.value_counts()
+circulator.Description.value_counts()
+circulator[circulator.Change < 0].Change.sum()
+circulator
 
 # Bus trips
 bus_sys= ['Metrobus', 'DASH Bus', 'FFC Bus']
@@ -116,7 +133,10 @@ len(bus) # Number of bus trips
 bus.Description.value_counts() # Entry/transfers
 len(bus.Entry_Route.value_counts()) # Bus routes
 bus.Change.value_counts() # Fares
+bus[bus.Change < 0].Change.sum()
+bus.Change.describe()
 bus.Weekday.value_counts() # Day of week
+bus.Month.value_counts()
 
 # Bus period
 bus_pd_list = []
@@ -133,11 +153,17 @@ bus['period'] = bus_pd_list
 bus.period.value_counts()
 
 # Bus duration
-trips_with_dash = data[data.Trip.isin(data[data.Operator=='DASH Bus'].Trip.values)]
-trips_with_dash['duration'] = trips_with_dash['Datetime'].diff()
-multi_trips = trips_with_dash.Trip.value_counts()>1
-multi_trips = multi_trips[multi_trips==True].index
-sort1 = trips_with_dash[trips_with_dash.Trip.isin(multi_trips)]
-sort1[sort1.Description == 'Transfer'][['Trip', 'Operator', 'Description', 'duration']]
-            
-    
+data.columns
+bus_entries = data[( (data.Description == 'Entry') |(data.Description == 'Transfer')) & (data.Operator=='Metrobus')].index
+len(bus_entries)
+data['bus_time'] = ''
+for entry in bus_entries:
+    try:
+        if (data.ix[entry+1].Description == 'Transfer'):
+            duration = data.ix[entry+1].Datetime - data.ix[entry].Datetime
+            data.set_value(entry, 'bus_time', duration)
+    except:
+        print 'No key'
+
+bus_trips_df = data[data['bus_time'] != '']
+bus_trips_df.groupby(by='Entry_Route').bus_time.describe()
